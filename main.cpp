@@ -20,13 +20,13 @@ typedef struct kelas kelas;
 
 day initialize_day();
 int time_to_int(const string ch);
-day derive_day_from_name(string name, vector<day> days);
-int find_course_index(string name, vector<course> courses);
+day *derive_day_from_name(string name, vector<day> &days);
+int find_course_index(string name, vector<course> &courses);
 course create_course(string name);
 void match_available_periods(course &current_course, day &current_day, int st, int fn);
-bool course_cmp(const course* &a, const course* &b);
-bool teacher_cmp(const teacher* &a, const teacher* &b);
-bool time_segment_cmp(const time_segment* &a, const time_segment* &b);
+bool course_cmp(course *a, course *b);
+bool teacher_cmp(teacher *a, teacher *b);
+bool time_segment_cmp(time_segment *a, time_segment *b);
 
 struct time_segment{
     int st;
@@ -83,17 +83,17 @@ int main(){
         cin >> day_cnt;
         for(j = 0; j < day_cnt; j++){
             cin >> day_name;
-            day temp_day = derive_day_from_name(day_name, days);
-            for(int k = 0; k < NUMBER_OF_PERIODS; k++){
-               teachers[i].available_periods.push_back(&temp_day.periods[k]);
-               temp_day.periods[k].available_teachers.push_back(&teachers[i]);
+            day *temp_day = derive_day_from_name(day_name, days);
+            for(k = 0; k < NUMBER_OF_PERIODS; k++){
+               teachers[i].available_periods.push_back(&(temp_day -> periods[k]));
+               (*temp_day).periods[k].available_teachers.push_back(&teachers[i]);
             }
         }
         int course_cnt;
         string course_name;
         int course_index;
         cin >> course_cnt;
-        for(int j = 0; j < course_cnt; j++){
+        for(j = 0; j < course_cnt; j++){
             cin >> course_name;
             course_index = find_course_index(course_name, courses);
             teachers[i].available_courses.push_back(&courses[course_index]);
@@ -106,7 +106,7 @@ int main(){
     for(i = 0; i < course_cnt; i++){
         string course_name;
         int course_index, st_time, fn_time;
-        day day1, day2;
+        day *day1, *day2;
         string day1_name, day2_name, st_period, fn_period;
         cin >> course_name;
         course_index = find_course_index(course_name, courses);
@@ -116,8 +116,8 @@ int main(){
         cin >> st_period >> fn_period;
         st_time = time_to_int(st_period);
         fn_time = time_to_int(fn_period);
-        match_available_periods(courses[course_index], day1, st_time, fn_time);
-        match_available_periods(courses[course_index], day1, st_time, fn_time);
+        match_available_periods(courses[course_index], *day1, st_time, fn_time);
+        match_available_periods(courses[course_index], *day2, st_time, fn_time);
     }
 
     for(i = 0; i < NUMBER_OF_DAYS; i++){
@@ -133,6 +133,9 @@ int main(){
         sort(current_course.available_teachers.begin(), current_course.available_teachers.end(), teacher_cmp);
         sort(current_course.available_periods.begin(), current_course.available_periods.end(), time_segment_cmp);
     }
+
+    kelas kelases[NUMBER_OF_CLASSES];
+
     return 0;
 }
 
@@ -146,14 +149,15 @@ day initialize_day(){
     return temp;
 }
 
-day derive_day_from_name(string name, vector<day> days){
+day *derive_day_from_name(string name, vector<day> &days){
     int i;
-    for(int i = 0; i < NUMBER_OF_DAYS; i++){
+    for(i = 0; i < NUMBER_OF_DAYS; i++){
         if(!name.compare(day_names[i])){
-            return days[i];
+            return &days[i];
         }
     }
     // does not handle invalid input
+    return NULL;
 }
 
 int find_course_index(string name, vector<course> &courses){
@@ -177,19 +181,19 @@ void match_available_periods(course &current_course, day &current_day, int st, i
     }
 }
 
-bool course_cmp(const course* &a, const course* &b){
+bool course_cmp(course *a,course *b){
     return ((a -> name).compare(b -> name) < 0);
 }
 
-bool teacher_cmp(const teacher* &a, const teacher* &b){
+bool teacher_cmp(teacher *a, teacher *b){
     int sza = (int) a -> available_periods.size(), szb = (int) b -> available_periods.size();
-    if(a == b){
+    if(sza == szb){
         return (a -> name.compare(b -> name) < 0);
     }
-    return (a < b);
+    return (sza < szb);
 }
 
-bool time_segment_cmp(const time_segment* &a, const time_segment* &b){
+bool time_segment_cmp(time_segment *a, time_segment *b){
     if(a -> st == b -> st){
         return (a -> fn < b -> fn);
     }
