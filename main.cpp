@@ -167,7 +167,7 @@ int main(){
                         kelases[i].doroos.push_back(make_dars(y, x, *it1, *it2));
                         (*it1) -> available_teachers.erase(teach_it1);
                         (*it2) -> available_teachers.erase(teach_it2);
-                        it2 -= (it1 < it2);
+                        it2 -= (it1 < it2); // when it1 apears before it2 and is erased from the vector it2 points to the element next to the one it should point to.
                         y -> available_periods.erase(it1);
                         y -> available_periods.erase(it2);
                         break;
@@ -176,7 +176,7 @@ int main(){
             }
         }
     }
-
+    // output
     vector<course*> sorted_course_ptr;
     for(course &subject : courses){
         sorted_course_ptr.push_back(&subject);
@@ -255,17 +255,11 @@ bool course_cmp(course *a,course *b){
 
 bool teacher_cmp(teacher *a, teacher *b){
     int sza = (int) a -> available_periods.size(), szb = (int) b -> available_periods.size();
-    if(sza == szb){
-        return (a -> name.compare(b -> name) < 0);
-    }
-    return (sza < szb);
+    return (sza == szb) ? (a -> name.compare(b -> name) < 0) : (sza < szb);
 }
 
 bool time_segment_cmp(time_segment *a, time_segment *b){
-    if(a -> st == b -> st){
-        return (a -> fn < b -> fn);
-    }
-    return (a -> st < b -> st);
+    return (a -> st == b -> st) ? (a -> fn < b -> fn) : (a -> st < b -> st);
 }
 
 course create_course(string name){
@@ -287,12 +281,7 @@ string int_to_time(int m){
 }
 
 bool has_dars(kelas current_kelas, course *subject){
-    for(dars x : current_kelas.doroos){
-        if(x.subject == subject){
-            return true;
-        }
-    }
-    return false;
+    return find_if(all(current_kelas.doroos), [&](dars x){return x.subject == subject;}) != current_kelas.doroos.end();
 }
 
 dars make_dars(teacher *instructor, course *subject, time_segment *period1, time_segment* period2){
