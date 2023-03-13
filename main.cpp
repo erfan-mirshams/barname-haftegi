@@ -6,6 +6,7 @@
 #define NUMBER_OF_DAYS 7
 #define NUMBER_OF_CLASSES 2
 #define NUMBER_OF_PERIODS 3
+#define all(x) (x).begin(), (x).end()
 
 using namespace std;
 
@@ -27,6 +28,12 @@ void match_available_periods(course &current_course, day &current_day, int st, i
 bool course_cmp(course *a, course *b);
 bool teacher_cmp(teacher *a, teacher *b);
 bool time_segment_cmp(time_segment *a, time_segment *b);
+bool are_periods_in_same_time(time_segment a, time_segment b);
+time_segment *find_matching_period(course &current_course, time_segment* current_period);
+dars make_dars(teacher *instructor, course *subject, time_segment *period1, time_segment* period2);
+bool has_dars(kelas current_kelas, course *subject);
+string int_to_time(int m);
+void print_dars_in_klass(course *course_ptr, kelas current_kelas);
 
 struct time_segment{
     int st;
@@ -53,9 +60,10 @@ struct day{
 };
 
 struct dars{
-    teacher instructor;
-    course subject;
-    time_segment period;
+    teacher* instructor;
+    course* subject;
+    time_segment* period1;
+    time_segment* period2;
 };
 
 struct kelas{
@@ -121,21 +129,65 @@ int main(){
     }
 
     for(i = 0; i < NUMBER_OF_DAYS; i++){
-        for_each(days[i].periods, days[i].periods + NUMBER_OF_PERIODS, [&](time_segment x){sort(x.available_courses.begin(), x.available_courses.end(), course_cmp);});
+        for_each(days[i].periods, days[i].periods + NUMBER_OF_PERIODS, [&](time_segment x){sort(all(x.available_courses), course_cmp);});
     }
 
-    for(teacher current_teacher : teachers){
-        sort(current_teacher.available_courses.begin(), current_teacher.available_courses.end(), course_cmp);
-        sort(current_teacher.available_periods.begin(), current_teacher.available_periods.end(), time_segment_cmp);
+    for(teacher &current_teacher : teachers){
+        sort(all(current_teacher.available_courses), course_cmp);
+        sort(all(current_teacher.available_periods), time_segment_cmp);
     }
 
-    for(course current_course : courses){
-        sort(current_course.available_teachers.begin(), current_course.available_teachers.end(), teacher_cmp);
-        sort(current_course.available_periods.begin(), current_course.available_periods.end(), time_segment_cmp);
+    for(course &current_course : courses){
+        sort(all(current_course.available_teachers), teacher_cmp);
+        sort(all(current_course.available_periods), time_segment_cmp);
     }
 
     kelas kelases[NUMBER_OF_CLASSES];
 
+    for(i = 0; i < NUMBER_OF_CLASSES; i++){
+        for(j = 0; j < NUMBER_OF_DAYS; j++){
+            for(k = 0; k < NUMBER_OF_PERIODS; k++){
+                time_segment *period_1_it = &days[j].periods[k];
+                for(course *x : days[j].periods[k].available_courses){
+                    if(has_dars(kelases[i], x)){
+                        continue;
+                    }
+                    for(teacher *y : x -> available_teachers){
+                        time_segment *period_2_it = find_matching_period(*x, period_1_it);
+                        vector<time_segment*>::iterator it1 = find(all(y -> available_periods), period_1_it);
+                        vector<time_segment*>::iterator it2 = find(all(y -> available_periods), period_2_it);
+                        if(it1 == (y -> available_periods).end() || it2 == (y -> available_periods).end()){
+                            continue;
+                        }
+                        vector<teacher*>::iterator teach_it1 = find(all((*it1) -> available_teachers), y);
+                        vector<teacher*>::iterator teach_it2 = find(all((*it2) -> available_teachers), y);
+                        if(teach_it1 == (*it1) -> available_teachers.end() || teach_it2 == (*it2) -> available_teachers.end()){
+                            continue;
+                        }
+                        kelases[i].doroos.push_back(make_dars(y, x, *it1, *it2));
+                        (*it1) -> available_teachers.erase(teach_it1);
+                        (*it2) -> available_teachers.erase(teach_it2);
+                        it2 -= (it1 < it2);
+                        y -> available_periods.erase(it1);
+                        y -> available_periods.erase(it2);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    vector<course*> sorted_course_ptr;
+    for(course &subject : courses){
+        sorted_course_ptr.push_back(&subject);
+    }
+    sort(all(sorted_course_ptr), course_cmp);
+    for(course *course_ptr : sorted_course_ptr){
+        cout << course_ptr -> name << endl;
+        for(i = 0; i < NUMBER_OF_CLASSES; i++){
+            print_dars_in_klass(course_ptr, kelases[i]);
+        }
+    }
     return 0;
 }
 
@@ -169,6 +221,22 @@ int find_course_index(string name, vector<course> &courses){
     }
     courses.push_back(create_course(name));
     return (int)courses.size() - 1;
+}
+
+time_segment *find_matching_period(course &current_course, time_segment* current_period){
+    for(time_segment* x : current_course.available_periods){
+        if(x == current_period){
+            continue;
+        }
+        if(are_periods_in_same_time(*x, *current_period)){
+            return x;
+        }
+    }
+    return NULL;
+}
+
+bool are_periods_in_same_time(time_segment a, time_segment b){
+    return (a.st == b.st && a.fn == b.fn);
 }
 
 void match_available_periods(course &current_course, day &current_day, int st, int fn){
@@ -210,4 +278,37 @@ int time_to_int(const string ch){
     int h, m;
     sscanf(ch.c_str(), "%d:%d", &h, &m);
     return h * 60 + m;
+}
+
+string int_to_time(int m){
+    char ch[20];
+    sprintf(ch, "%02d:%02d", m / 60, m % 60);
+    return ch;
+}
+
+bool has_dars(kelas current_kelas, course *subject){
+    for(dars x : current_kelas.doroos){
+        if(x.subject == subject){
+            return true;
+        }
+    }
+    return false;
+}
+
+dars make_dars(teacher *instructor, course *subject, time_segment *period1, time_segment* period2){
+    dars temp;
+    temp.instructor = instructor;
+    temp.subject = subject;
+    temp.period1 = period1;
+    temp.period2 = period2;
+    return temp;
+}
+
+void print_dars_in_klass(course *course_ptr, kelas current_kelas){
+    vector<dars>::iterator it = find_if(all(current_kelas.doroos), [&](dars x){return x.subject == course_ptr;});
+    if(it == current_kelas.doroos.end()){
+        cout << "Not Found" << endl;
+        return;
+    }
+    cout << it -> instructor -> name << ": " << int_to_time(it -> period1 -> st) << " " << int_to_time(it -> period1 -> fn) << endl;
 }
