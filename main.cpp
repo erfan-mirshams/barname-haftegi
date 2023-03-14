@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 #include <algorithm>
 #define NUMBER_OF_DAYS 7
 #define NUMBER_OF_CLASSES 2
@@ -67,6 +68,7 @@ struct dars{
 };
 
 struct kelas{
+    map<time_segment*, bool> matched;
     vector<dars> doroos;
 };
 
@@ -146,7 +148,7 @@ int main(){
     }
 
     for(i = 0; i < NUMBER_OF_DAYS; i++){
-        for_each(days[i].periods, days[i].periods + NUMBER_OF_PERIODS, [&](time_segment x){sort(all(x.available_courses), course_cmp);});
+        for_each(days[i].periods, days[i].periods + NUMBER_OF_PERIODS, [&](time_segment &x){sort(all(x.available_courses), course_cmp);});
     }
 
     for(teacher &current_teacher : teachers){
@@ -165,12 +167,16 @@ int main(){
         for(j = 0; j < NUMBER_OF_DAYS; j++){
             for(k = 0; k < NUMBER_OF_PERIODS; k++){
                 time_segment *period_1_it = &days[j].periods[k];
+                bool found_subject = false;
                 for(course *x : days[j].periods[k].available_courses){
                     if(has_dars(kelases[i], x)){
                         continue;
                     }
-                    for(teacher *y : x -> available_teachers){
-                        time_segment *period_2_it = find_matching_period(*x, period_1_it);
+                    time_segment *period_2_it = find_matching_period(*x, period_1_it);
+                    if (kelases[i].matched[period_1_it] || kelases[i].matched[period_2_it]) {
+                        continue;
+                    }
+                    for (teacher *y : x -> available_teachers) {
                         vector<time_segment*>::iterator it1 = find(all(y -> available_periods), period_1_it);
                         vector<time_segment*>::iterator it2 = find(all(y -> available_periods), period_2_it);
                         if(it1 == (y -> available_periods).end() || it2 == (y -> available_periods).end()){
@@ -182,11 +188,17 @@ int main(){
                             continue;
                         }
                         kelases[i].doroos.push_back(make_dars(y, x, *it1, *it2));
+                        kelases[i].matched[period_1_it] = true;
+                        kelases[i].matched[period_2_it] = true;
                         (*it1) -> available_teachers.erase(teach_it1);
                         (*it2) -> available_teachers.erase(teach_it2);
                         it2 -= (it1 < it2); // when it1 apears before it2 and is erased from the vector it2 points to the element next to the one it should point to.
                         y -> available_periods.erase(it1);
                         y -> available_periods.erase(it2);
+                        found_subject = true;
+                        break;
+                    }
+                    if(found_subject){
                         break;
                     }
                 }
