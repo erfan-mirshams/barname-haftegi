@@ -73,19 +73,26 @@ struct kelas{
 
 int main(){
     vector<day> days;
+    days.reserve(NUMBER_OF_DAYS);
     int i, j, k;
     for(i = 0; i < NUMBER_OF_DAYS; i++){
         days.push_back(initialize_day());
     }
 
     vector<course> courses;
+    courses.reserve(1000);
 
     int teacher_cnt;
     cin >> teacher_cnt;
 
-    vector<teacher> teachers(teacher_cnt);
+    vector< vector<int> > temp_course_index(teacher_cnt);
+
+    vector<teacher> teachers;
+    teachers.reserve(teacher_cnt);
     for(i = 0; i < teacher_cnt; i++){
-        cin >> teachers[i].name;
+        teacher temp_teacher;
+        cin >> temp_teacher.name;
+        teachers.push_back(temp_teacher);
         int day_cnt;
         string day_name;
         cin >> day_cnt;
@@ -104,13 +111,23 @@ int main(){
         for(j = 0; j < course_cnt; j++){
             cin >> course_name;
             course_index = find_course_index(course_name, courses);
-            teachers[i].available_courses.push_back(&courses[course_index]);
+            temp_course_index[i].push_back(course_index);
             courses[course_index].available_teachers.push_back(&teachers[i]);
         }
     }
 
     int course_cnt;
     cin >> course_cnt;
+
+    courses.reserve(course_cnt);
+
+    for(i = 0; i < teacher_cnt; i++){
+        for(int course_index : temp_course_index[i]){
+            teachers[i].available_courses.push_back(&courses[course_index]);
+        }
+        temp_course_index[i].clear();
+    }
+
     for(i = 0; i < course_cnt; i++){
         string course_name;
         int course_index, st_time, fn_time;
