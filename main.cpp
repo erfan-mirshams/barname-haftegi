@@ -22,15 +22,15 @@ typedef struct kelas kelas;
 
 day initialize_day();
 int time_to_int(const string ch);
-day *derive_day_from_name(string name, vector<day> &days);
-int find_course_index(string name, vector<course> &courses);
+day *derive_day_from_name(string name, vector<day> *days);
+int find_course_index(string name, vector<course> *courses);
 course create_course(string name);
-void match_available_periods(course &current_course, day &current_day, int st, int fn);
+void match_available_periods(course *current_course, day *current_day, int st, int fn);
 bool course_cmp(course *a, course *b);
 bool teacher_cmp(teacher *a, teacher *b);
 bool time_segment_cmp(time_segment *a, time_segment *b);
 bool are_periods_in_same_time(time_segment a, time_segment b);
-time_segment *find_matching_period(course &current_course, time_segment* current_period);
+time_segment *find_matching_period(course *current_course, time_segment* current_period);
 dars make_dars(teacher *instructor, course *subject, time_segment *period1, time_segment* period2);
 bool has_dars(kelas current_kelas, course *subject);
 string int_to_time(int m);
@@ -100,7 +100,7 @@ int main(){
         cin >> day_cnt;
         for(j = 0; j < day_cnt; j++){
             cin >> day_name;
-            day *temp_day = derive_day_from_name(day_name, days);
+            day *temp_day = derive_day_from_name(day_name, &days);
             for(k = 0; k < NUMBER_OF_PERIODS; k++){
                teachers[i].available_periods.push_back(&(temp_day -> periods[k]));
                (*temp_day).periods[k].available_teachers.push_back(&teachers[i]);
@@ -112,7 +112,7 @@ int main(){
         cin >> course_cnt;
         for(j = 0; j < course_cnt; j++){
             cin >> course_name;
-            course_index = find_course_index(course_name, courses);
+            course_index = find_course_index(course_name, &courses);
             temp_course_index[i].push_back(course_index);
             courses[course_index].available_teachers.push_back(&teachers[i]);
         }
@@ -136,29 +136,31 @@ int main(){
         day *day1, *day2;
         string day1_name, day2_name, st_period, fn_period;
         cin >> course_name;
-        course_index = find_course_index(course_name, courses);
+        course_index = find_course_index(course_name, &courses);
         cin >> day1_name >> day2_name;
-        day1 = derive_day_from_name(day1_name, days);
-        day2 = derive_day_from_name(day2_name, days);
+        day1 = derive_day_from_name(day1_name, &days);
+        day2 = derive_day_from_name(day2_name, &days);
         cin >> st_period >> fn_period;
         st_time = time_to_int(st_period);
         fn_time = time_to_int(fn_period);
-        match_available_periods(courses[course_index], *day1, st_time, fn_time);
-        match_available_periods(courses[course_index], *day2, st_time, fn_time);
+        match_available_periods(&courses[course_index], day1, st_time, fn_time);
+        match_available_periods(&courses[course_index], day2, st_time, fn_time);
     }
 
     for(i = 0; i < NUMBER_OF_DAYS; i++){
-        for_each(days[i].periods, days[i].periods + NUMBER_OF_PERIODS, [&](time_segment &x){sort(all(x.available_courses), course_cmp);});
+        for(j = 0; j < NUMBER_OF_PERIODS; j++){
+            sort(all(days[i].periods[j].available_courses), course_cmp);
+        }
     }
 
-    for(teacher &current_teacher : teachers){
-        sort(all(current_teacher.available_courses), course_cmp);
-        sort(all(current_teacher.available_periods), time_segment_cmp);
+    for(i = 0; i < (int)teachers.size(); i++){
+        sort(all(teachers[i].available_courses), course_cmp);
+        sort(all(teachers[i].available_periods), time_segment_cmp);
     }
 
-    for(course &current_course : courses){
-        sort(all(current_course.available_teachers), teacher_cmp);
-        sort(all(current_course.available_periods), time_segment_cmp);
+    for(i = 0; i < (int)courses.size(); i++){
+        sort(all(courses[i].available_teachers), teacher_cmp);
+        sort(all(courses[i].available_periods), time_segment_cmp);
     }
 
     kelas kelases[NUMBER_OF_CLASSES];
@@ -172,7 +174,7 @@ int main(){
                     if(has_dars(kelases[i], x)){
                         continue;
                     }
-                    time_segment *period_2_it = find_matching_period(*x, period_1_it);
+                    time_segment *period_2_it = find_matching_period(x, period_1_it);
                     if (kelases[i].matched[period_1_it] || kelases[i].matched[period_2_it]) {
                         continue;
                     }
@@ -192,7 +194,7 @@ int main(){
                         kelases[i].matched[period_2_it] = true;
                         (*it1) -> available_teachers.erase(teach_it1);
                         (*it2) -> available_teachers.erase(teach_it2);
-                        it2 -= (it1 < it2); // when it1 apears before it2 and is erased from the vector it2 points to the element next to the one it should point to.
+                        it2 -= (it1 < it2);
                         y -> available_periods.erase(it1);
                         y -> available_periods.erase(it2);
                         found_subject = true;
@@ -205,10 +207,10 @@ int main(){
             }
         }
     }
-    // output
+
     vector<course*> sorted_course_ptr;
-    for(course &subject : courses){
-        sorted_course_ptr.push_back(&subject);
+    for(i = 0; i < (int)courses.size(); i++){
+        sorted_course_ptr.push_back(&courses[i]);
     }
     sort(all(sorted_course_ptr), course_cmp);
     for(course *course_ptr : sorted_course_ptr){
@@ -230,30 +232,30 @@ day initialize_day(){
     return temp;
 }
 
-day *derive_day_from_name(string name, vector<day> &days){
+day *derive_day_from_name(string name, vector<day> *days){
     int i;
     for(i = 0; i < NUMBER_OF_DAYS; i++){
         if(!name.compare(day_names[i])){
-            return &days[i];
+            return &(*days)[i];
         }
     }
     // does not handle invalid input
     return NULL;
 }
 
-int find_course_index(string name, vector<course> &courses){
+int find_course_index(string name, vector<course> *courses){
     int i;
-    for(i = 0; i < (int)courses.size(); i++){
-        if(!courses[i].name.compare(name)){
+    for(i = 0; i < (int)courses -> size(); i++){
+        if(!(*courses)[i].name.compare(name)){
             return i;
         }
     }
-    courses.push_back(create_course(name));
-    return (int)courses.size() - 1;
+    courses -> push_back(create_course(name));
+    return (int)courses -> size() - 1;
 }
 
-time_segment *find_matching_period(course &current_course, time_segment* current_period){
-    for(time_segment* x : current_course.available_periods){
+time_segment *find_matching_period(course *current_course, time_segment* current_period){
+    for(time_segment* x : current_course -> available_periods){
         if(x == current_period){
             continue;
         }
@@ -268,12 +270,12 @@ bool are_periods_in_same_time(time_segment a, time_segment b){
     return (a.st == b.st && a.fn == b.fn);
 }
 
-void match_available_periods(course &current_course, day &current_day, int st, int fn){
+void match_available_periods(course *current_course, day *current_day, int st, int fn){
     int i;
     for(i = 0; i < NUMBER_OF_PERIODS; i++){
-        if(current_day.periods[i].st >= st && current_day.periods[i].fn <= fn){
-            current_course.available_periods.push_back(&current_day.periods[i]);
-            current_day.periods[i].available_courses.push_back(&current_course);
+        if(current_day -> periods[i].st >= st && current_day -> periods[i].fn <= fn){
+            current_course -> available_periods.push_back(&(current_day -> periods[i]));
+            current_day -> periods[i].available_courses.push_back(current_course);
         }
     }
 }
