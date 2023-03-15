@@ -7,6 +7,8 @@
 #define NUMBER_OF_DAYS 7
 #define NUMBER_OF_CLASSES 2
 #define NUMBER_OF_PERIODS 3
+#define MAX_CLOCK_LENGTH 20
+#define MINUTES_IN_HOUR 60
 #define all(x) (x).begin(), (x).end()
 
 using namespace std;
@@ -82,7 +84,6 @@ int main(){
     }
 
     vector<course> courses;
-    courses.reserve(1000);
 
     int teacher_cnt;
     cin >> teacher_cnt;
@@ -302,12 +303,12 @@ course create_course(string name){
 int time_to_int(const string ch){
     int h, m;
     sscanf(ch.c_str(), "%d:%d", &h, &m);
-    return h * 60 + m;
+    return h * MINUTES_IN_HOUR + m;
 }
 
 string int_to_time(int m){
-    char ch[20];
-    sprintf(ch, "%02d:%02d", m / 60, m % 60);
+    char ch[MAX_CLOCK_LENGTH];
+    sprintf(ch, "%02d:%02d", m / MINUTES_IN_HOUR, m % MINUTES_IN_HOUR);
     return ch;
 }
 
