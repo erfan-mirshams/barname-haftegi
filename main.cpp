@@ -83,12 +83,16 @@ int main(){
         days.push_back(initialize_day());
     }
 
+    map<string, int> dars_bi_dard;
+
     vector<course> courses;
 
     int teacher_cnt;
     cin >> teacher_cnt;
 
     vector< vector<int> > temp_course_index(teacher_cnt);
+
+    int course_reserve_cap = 0;
 
     vector<teacher> teachers;
     teachers.reserve(teacher_cnt);
@@ -111,6 +115,7 @@ int main(){
         string course_name;
         int course_index;
         cin >> course_cnt;
+        course_reserve_cap += course_cnt;
         for(j = 0; j < course_cnt; j++){
             cin >> course_name;
             course_index = find_course_index(course_name, &courses);
@@ -121,8 +126,7 @@ int main(){
 
     int course_cnt;
     cin >> course_cnt;
-
-    courses.reserve(course_cnt);
+    courses.reserve(course_cnt + course_reserve_cap);
 
     for(i = 0; i < teacher_cnt; i++){
         for(int course_index : temp_course_index[i]){
@@ -137,6 +141,7 @@ int main(){
         day *day1, *day2;
         string day1_name, day2_name, st_period, fn_period;
         cin >> course_name;
+        dars_bi_dard[course_name] = 1;
         course_index = find_course_index(course_name, &courses);
         cin >> day1_name >> day2_name;
         day1 = derive_day_from_name(day1_name, &days);
@@ -215,6 +220,9 @@ int main(){
     }
     sort(all(sorted_course_ptr), course_cmp);
     for(course *course_ptr : sorted_course_ptr){
+        if(!dars_bi_dard[course_ptr -> name]){
+            continue;
+        }
         cout << course_ptr -> name << endl;
         for(i = 0; i < NUMBER_OF_CLASSES; i++){
             print_dars_in_klass(course_ptr, kelases[i]);
